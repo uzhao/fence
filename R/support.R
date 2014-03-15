@@ -1,4 +1,4 @@
-findallsubmodel = function(full) {
+findsubmodel = function(full, maxsize = 5) {
   
 }
 
@@ -6,13 +6,23 @@ peakw = function(freq, req = 2) {
   of = order(freq, decreasing = TRUE)
   for (i in 1:length(of)) {
     index = of[i]
-    start = max(1, index - req)
-    end = min(length(freq), index + req)
+    if ((index - req < 1) | (index + req > length(freq))) {
+      next
+    }
+    start = index - req
+    end = index + req
     # FIXME: can not identify more than one peak with same freq
-    if (all(freq[start:end] <= freq[index])) {
+    if (all(freq[start:end] <= freq[index]) && any(freq[index:length(freq)] < freq[index])) {
       return(index)
     }
   }
   warning("No peak identified!")
   return(NA)
+}
+
+plot.AF = function(res) {
+  tmp = data.frame(c = as.numeric(colnames(res$freq_mat)), 
+                   p = res$freq_mat[2,])
+  p = ggplot(tmp, aes(x = c, y = p)) + geom_line()
+  p
 }

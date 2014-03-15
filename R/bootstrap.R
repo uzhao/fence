@@ -11,16 +11,12 @@ bootstrap = function(set, mf, f, d) {
     # TODO: only data.frame type support, add more type in future
     full = mf(f, d)
     ans = replicate(B, d, FALSE)
-    bootsmp = NULL
-    # lm from stats
-
-    # glm from stats
-
-    # lmer from lme4
-    if (class(full) == "lmerMod") {
-      bootsmp = pboot_lmerMod(B)
-    }
-    # glmer from lme4
+    bootsmp = switch(class(full)[1],
+      lm = pboot_lm(B, full),
+      glm = pboot_glm(B, full),
+      lmerMod = pboot_lmerMod(B, full),
+      glmerMod = pboot_lmerMod(B, full),
+      NULL)
 
     if (is.null(bootsmp)) {
       warning("Switch to nonparametric bootstrap due to model is unsupported!")
@@ -34,22 +30,22 @@ bootstrap = function(set, mf, f, d) {
   }
 }
 
-pboot_lmerMod = function(B) {
+pboot_lmerMod = function(B, full) {
   # obtain parameters
   X = full@pp$X
   beta = fixef(full)
-  Z = t(full@pp$Zt)
+  Z = t(as.matrix(full@pp$Zt))
   # random intercept only
   # can't handle random slope or interactive term for now
   # TODO: sigma = full@pp$Lambdat * tau
   #       sigma = sigma %*% t(sigma)
   tau = attr(VarCorr(full), "sc")
-  sigmas = diag(full@pp$Lambdat * tau)
+  sigmas = diag(as.matrix(full@pp$Lambdat) * tau)
   n = nrow(X)
 
   # generate
   fe = X %*% beta
   a = matrix(rnorm(B * length(sigmas), 0, sigmas), nrow = length(sigmas))
   re = Z %*% a
-  as.matrix(fe + re + rnorm(n * B, 0, tau))
+  as.matrix(as.vector(fe) + re + rnorm(n * B, 0, tau))
 }
