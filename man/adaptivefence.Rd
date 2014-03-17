@@ -3,7 +3,7 @@
 \title{Adaptive Fence model selection}
 \usage{
 adaptivefence(mf, f, ms, d, lf, bootset = list(), bs = NULL, grid = 51,
-  pickf = md, sizef = size_default)
+  pf = size_default)
 }
 \arguments{
   \item{mf}{function for fitting the model}
@@ -14,7 +14,7 @@ adaptivefence(mf, f, ms, d, lf, bootset = list(), bs = NULL, grid = 51,
 
   \item{d}{data}
 
-  \item{lf}{function for lack of fit}
+  \item{lf}{function for lack of fit (to minimize)}
 
   \item{bootset}{bootstrap setting B: number of bootstrap
   sample mode: parametric("p") or nonparametric("np")}
@@ -24,9 +24,7 @@ adaptivefence(mf, f, ms, d, lf, bootset = list(), bs = NULL, grid = 51,
 
   \item{grid}{grid for c}
 
-  \item{pickf}{function for choosing the model for fixed c}
-
-  \item{sizef}{function for determinant model size}
+  \item{pf}{function for pick measuring (to minimize)}
 }
 \value{
 list with whatever

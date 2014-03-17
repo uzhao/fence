@@ -6,14 +6,13 @@
 #' @param f formular of full model
 #' @param ms list of formular of candidates models
 #' @param d data
-#' @param lf function for lack of fit 
+#' @param lf function for lack of fit (to minimize)
 #' @param bootset bootstrap setting
 #' B:    number of bootstrap sample
 #' mode: parametric("p") or nonparametric("np")
 #' @param bs bootstrap sample, default setting is automatically nonparametric bootstrap (B = 100)
 #' @param grid grid for c
-#' @param pickf function for choosing the model for fixed c
-#' @param sizef function for determinant model size
+#' @param pf function for pick measuring (to minimize)
 #' @return list with whatever
 #' @export
 
@@ -23,9 +22,11 @@ adaptivefence = function(
   # bootstrap related
   bootset = list(), bs = NULL,
   # fence related
-  grid = 51, pickf = md, sizef = size_default) {
+  grid = 51, pf = size_default) {
 
-  ans = list(full = f, models = ms, bootset = bootset, pickfunc = pickf, sizefunc = sizef)
+  ans = list(full = f, models = ms, bootset = bootset, pickfunc = pf)
+
+  mf = cmpfun(mf)
 
   if (missing(ms)) {
     stop("No candidate models specified!")
@@ -37,49 +38,66 @@ adaptivefence = function(
   #   ms = findsubmodel(f)
   # }
 
-  if (is.null(bs)) {
+  if (!is.null(bs)) {
+    B = length(bs)
+  }
+  else {
+    B = ifelse((missing(bootset) | is.null(bootset$B)), 100, bootset$B)
     bs = bootstrap(bootset, mf, f, d)
   }
   
-  # XXX: more elegant implement want
-  B = ifelse(is.null(bootset$B), 100, bootset$B)
+  eval_models = lapply(ms, function(m) {
+    lapply(bs, function(b) {
+      mf(m, b)
+    })
+  })
 
-  model_size = sapply(ms, sizef, d, mf)
-  ans$modelsize = model_size
-
-  lack_of_fit_matrix = sapply(ms, function(m)
-    sapply(bs, function(b) lf(mf(m, b))))
-  ans$lack_of_fit_matrix = lack_of_fit_matrix
-
-  Q_m = sweep(lack_of_fit_matrix, 1, apply(lack_of_fit_matrix, 1, min), '-')
-  ans$Qd_matrix = Q_m
-
-  lof_lower = 0
-  lof_upper = max(Q_m)
-
-  cs = seq(lof_lower, lof_upper, length.out = grid)
-
-  boot_model = matrix(NA, B, grid)
-
-  ci = 0
+  mi = 0
   bi = 0
-  model_mat = replicate(grid, {
-    ci <<- ci + 1
-    infence_mat <<- Q_m <= cs[ci]
+  lack_of_fit_matrix = replicate(length(ms), {
+    mi <<- mi + 1
     bi <<- 0
     replicate(B, {
       bi <<- bi + 1
-      candidate_index = which(infence_mat[bi,])
-      candidate_index = pickf(candidate_index, model_size, Q_m[bi,])
-      mlof(candidate_index, Q_m[bi,])
+      lf(eval_models[[mi]][[bi]])
     })
   })
-  force(model_mat)
-  colnames(model_mat) = cs
-  rm(ci, bi)
+  ans$lack_of_fit_matrix = lack_of_fit_matrix
 
-  ans$model_mat = model_mat
+  mi = 0
+  bi = 0
+  pick_matrix = replicate(length(ms), {
+    mi <<- mi + 1
+    bi <<- 0
+    replicate(B, {
+      bi <<- bi + 1
+      pf(eval_models[[mi]][[bi]], bs[[bi]])
+    })
+  })
+  ans$pick_matrix = pick_matrix
+
+  rm(mi, bi)
   
+  Q_m = sweep(lack_of_fit_matrix, 1, apply(lack_of_fit_matrix, 1, min), '-')
+  ans$Qd_matrix = Q_m
+  lof_lower = 0
+  lof_upper = max(Q_m)
+  cs = seq(lof_lower, lof_upper, length.out = grid)
+
+  model_mat = matrix(NA, nrow = B, ncol = grid)
+  for (i in 1:length(cs)) {
+    infence_matrix = Q_m <= cs[i]
+    for (bi in 1:B) {
+      b_infence = infence_matrix[bi,]
+      b_lack = lack_of_fit_matrix[bi,]
+      b_pick = pick_matrix[bi,]
+      b_pick[!b_infence] = Inf
+      b_pick = which(b_pick == min(b_pick))
+      model_mat[bi, i] = b_pick[which.min(b_lack[b_pick])]
+    }
+  }
+  ans$model_mat = model_mat
+
   # if two models have same frequency, this frequency must 
   # be lower than 0.5, so maybe we don't have to worry about 
   # this case too much?
