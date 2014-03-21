@@ -106,13 +106,14 @@ adaptivefence = function(
     tab = sort(table(l), decreasing = TRUE)
     c(as.numeric(names(tab)[1]), tab[1])
   })
-  
+  freq_mat[1,] = freq_mat[1,] / B
+
   colnames(freq_mat) = cs
   rownames(freq_mat) = c("index", "frequency")
   ans$freq_mat = freq_mat
 
   cindex = peakw(freq_mat[2,])
-  ans$c = cindex
+  ans$c = cs[cindex]
 
   if (!is.na(cindex)) {
     ans$formula = ms[[freq_mat[1,cindex]]]
