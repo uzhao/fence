@@ -2,6 +2,7 @@ bootstrap = function(set, mf, f, d) {
   mode = ifelse(is.null(set$mode), "np", match.arg(set$mode, c("np", "p")))
   B = ifelse(is.null(set$B), 100, set$B)
 
+  # FIXME: bootstrap residual, not subject
   if (mode == "np") {
     if (class(d) == "data.frame") {
       return(replicate(B, d[sample(1:nrow(d), nrow(d), TRUE),], FALSE))
