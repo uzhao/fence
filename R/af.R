@@ -13,6 +13,7 @@
 #' @param bs bootstrap sample, default setting is automatically nonparametric bootstrap (B = 100)
 #' @param grid grid for c
 #' @param pf function for pick measuring (to minimize)
+#' @param bandwidth bandwidth for kernel smooth function
 #' @return list with whatever
 #' @export
 
@@ -22,9 +23,9 @@ adaptivefence = function(
   # bootstrap related
   bootset = list(), bs = NULL,
   # fence related
-  grid = 51, pf = size_default) {
+  grid = 51, pf = size_default, bandwidth) {
 
-  ans = list(full = f, models = ms, bootset = bootset, pickfunc = pf)
+  ans = list(full = f, models = ms, bootset = bootset, pickfunc = pf, bandwidth = bandwidth)
 
   mf = cmpfun(mf)
 
@@ -45,6 +46,7 @@ adaptivefence = function(
     B = ifelse((missing(bootset) | is.null(bootset$B)), 100, bootset$B)
     bs = bootstrap(bootset, mf, f, d)
   }
+  ans$B = B
   
   eval_models = lapply(ms, function(m) {
     lapply(bs, function(b) {
@@ -106,13 +108,14 @@ adaptivefence = function(
     tab = sort(table(l), decreasing = TRUE)
     c(as.numeric(names(tab)[1]), tab[1])
   })
-  freq_mat[1,] = freq_mat[1,] / B
-
+  freq_mat[2,] = freq_mat[2,] / B
+  freq_mat = rbind(freq_mat, ksmooth(cs, freq_mat[2,], kernel = "normal", bandwidth = bandwidth, x.point = cs)$y)
+  
   colnames(freq_mat) = cs
-  rownames(freq_mat) = c("index", "frequency")
+  rownames(freq_mat) = c("index", "frequency", "smooth_frequency")
   ans$freq_mat = freq_mat
 
-  cindex = peakw(freq_mat[2,])
+  cindex = peakw(cs, freq_mat[3,], 2)
   ans$c = cs[cindex]
 
   if (!is.na(cindex)) {
