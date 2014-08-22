@@ -7,5 +7,7 @@ Author: Jianyang Zhao
 Maintainer: Jianyang Zhao <uzhao@ucdavis.edu>
 Description: fence methods for model selection
 License: BSD
-Depends: lme4, ggplot2, compiler
-
+Depends:
+    lme4,
+    ggplot2,
+    compiler

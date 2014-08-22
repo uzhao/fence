@@ -1,4 +1,109 @@
-# support functions
+#' Invisible Fence gene selection
+#'
+#' Invisible Fence gene selection
+#'
+#' @param gene     a matrix, each column for a subject
+#' @param response a factor vector, each element for a subject
+#' @param genename a character vector
+#' @param geneset  a character list
+#' @param minsize  a integer, only use geneset which size larger or equal to this
+#' @param B        a integer, number of bootstrap samples
+#' @return list with whatever
+#' @export
+
+# Two class unpaired type in GSA
+IF.GSA = function(
+  gene, response,
+  genenames, genesets, minsize = 0,
+  B = 100, limitboot = length(genesets)) {
+    ans = IFbase.GSA(gene, response, genenames, genesets, minsize, B, limitboot)
+    ans$RIF = NULL
+    ans
+}
+
+#' Relative Invisible Fence gene selection
+#'
+#' Relative Invisible Fence gene selection
+#'
+#' @param gene     a matrix, each column for a subject
+#' @param response a factor vector, each element for a subject
+#' @param genename a character vector
+#' @param geneset  a character list
+#' @param minsize  a integer, only use geneset which size larger or equal to this
+#' @param B        a integer, number of bootstrap samples
+#' @return list with whatever
+#' @export
+
+# Two class unpaired type in GSA
+RIF.GSA = function(
+  gene, response,
+  genenames, genesets, minsize = 0,
+  B = 100, limitboot = length(genesets)) {
+    ans = IFbase.GSA(gene, response, genenames, genesets, minsize, B, limitboot)
+    ans$IF = NULL
+    ans
+}
+
+IFbase.GSA = function(gene, response, genenames, genesets, minsize, B, limitboot) {
+  response = factor(response)
+  groupa = response == levels(response)[1]
+  groupb = !groupa
+  na = sum(groupa)
+  nb = sum(groupb)
+
+  # remove too small genesets definition
+  genesets = genesets[sapply(genesets, length) >= minsize]
+  # remove duplicated genesets definition
+  dup = duplicated(sapply(genesets, function(geneset) {
+    do.call(paste, as.list(sort(geneset)))
+  }))
+  if (sum(dup) > 1) {
+    cat("These genesets are removed due to duplicate!\n")
+    print(names(genesets)[dup])
+  }
+  genesets = genesets[!dup]
+
+  genesetsrow = lapply(genesets, function(geneset) match(geneset, genenames))
+  anymissgene = sapply(genesetsrow, function(genesetrow) any(is.na(genesetrow)))
+  allmissgene = sapply(genesetsrow, function(genesetrow) all(is.na(genesetrow)))
+  if (any(anymissgene != allmissgene)) {
+    cat("Some genesets missing part of gene(s) data, please check the data.\n")
+  }
+  if (any(anymissgene)) {
+    cat("Some genesets missing all genes data, will be removed.\n")
+  }
+  genesets = genesets[!allmissgene]
+  genesetsrow = genesetsrow[!allmissgene]
+
+  rawscores = get_geneset_scores(gene, response, genesetsrow)
+  genesetsneedboot = rank(-rawscores$geneset_scores) <= limitboot
+  rowsneedboot = na.omit(unique(unlist(genesetsrow[genesetsneedboot])))
+
+  genesets = genesets[genesetsneedboot]
+  genesetsrow = genesetsrow[genesetsneedboot]
+  nogs = length(genesets)
+
+  Bsample = gene
+  Bsample_genesetorder = replicate(B, {
+    Bsample[,groupa] = gene[,sample(which(groupa), na, TRUE)]
+    Bsample[,groupb] = gene[,sample(which(groupb), nb, TRUE)]
+    get_geneset_scores(Bsample, response, genesetsrow)$order
+  })
+
+  freq = list()
+  for (size in 1:limitboot) {
+    cand = apply(matrix(Bsample_genesetorder[1:size,], nrow = size), 2, function(x) do.call(paste, as.list(sort(x))))
+    raw = sort(table(cand), decreasing = TRUE)[1]
+    model = names(genesets)[as.numeric(strsplit(names(raw), " ")[[1]])]
+    freq[[size]] = list(raw = as.numeric(raw), relative = relative(B, raw, nogs, size), model = model)
+  }
+
+  IF = freq[[peakw(sapply(freq, function(x) x$raw))]]
+  RIF = freq[[which.min(sapply(freq, function(x) x$relative))]]
+
+  list(genesets = genesets, freq = freq, IF = IF, RIF = RIF)
+}
+
 get_gene_scores = function(gene, response) {
   ni = table(response)
   groupa = gene[,response == levels(response)[1]]
@@ -36,6 +141,7 @@ get_geneset_scores = function(gene, response, genesetsrow) {
        order = order(-geneset_scores))
 }
 
+# XXX: using gmp to increase precision
 bigchoose = function(n, k) {
   ans = 1
   for (i in 0:(k-1)) {
@@ -49,84 +155,3 @@ relative = function(B, times, nogs, size) {
   names(ans) = NULL
   ans
 }
-
-#' Invisible Fence gene selection
-#'
-#' Invisible Fence gene selection
-#'
-#' @param gene     a matrix, each column for a subject
-#' @param response a factor vector, each element for a subject
-#' @param genename a character vector
-#' @param geneset  a character list
-#' @param minsize  a integer, only use geneset which size larger or equal to this
-#' @param B        a integer, number of bootstrap samples
-
-#' @return list with whatever
-#' @export
-
-# Two class unpaired type in GSA
-ifgene = function(
-  gene, response, 
-  genenames, genesets, minsize = 0, 
-  B = 100, limitboot = length(genesets)) {
-
-  response = factor(response)
-  groupa = response == levels(response)[1]
-  groupb = !groupa
-  na = sum(groupa)
-  nb = sum(groupb)
-
-  # remove too small genesets definition
-  genesets = genesets[sapply(genesets, length) >= minsize]
-  # remove duplicated genesets definition
-  dup = duplicated(sapply(genesets, function(geneset) {
-    do.call(paste, as.list(sort(geneset)))
-  }))
-  if (sum(dup) > 1) {
-    cat("These genesets are removed due to duplicate!\n")
-    print(names(genesets)[dup])
-  }
-  genesets = genesets[!dup]
-
-  genesetsrow = lapply(genesets, function(geneset) match(geneset, genenames))
-  anymissgene = sapply(genesetsrow, function(genesetrow) any(is.na(genesetrow)))
-  allmissgene = sapply(genesetsrow, function(genesetrow) all(is.na(genesetrow)))
-  if (any(anymissgene != allmissgene)) {
-    cat("Some genesets missing part of gene(s) data, please check the data.\n")
-  }
-  if (any(anymissgene)) {
-    cat("Some genesets missing all genes data, will be removed.\n")
-  }
-  genesets = genesets[!allmissgene]
-  genesetsrow = genesetsrow[!allmissgene]
-  
-  rawscores = get_geneset_scores(gene, response, genesetsrow)
-  genesetsneedboot = rank(-rawscores$geneset_scores) <= limitboot
-  rowsneedboot = na.omit(unique(unlist(genesetsrow[genesetsneedboot])))
-  
-  genesets = genesets[genesetsneedboot]
-  genesetsrow = genesetsrow[genesetsneedboot]
-  nogs = length(genesets)
-  
-  Bsample = gene
-  Bsample_genesetorder = replicate(B, {
-    Bsample[,groupa] = gene[,sample(which(groupa), na, TRUE)]
-    Bsample[,groupb] = gene[,sample(which(groupb), nb, TRUE)]
-    get_geneset_scores(Bsample, response, genesetsrow)$order
-  })
-  
-
-  freq = list()
-  for (size in 1:limitboot) {
-    cand = apply(matrix(Bsample_genesetorder[1:size,], nrow = size), 2, function(x) do.call(paste, as.list(sort(x))))
-    raw = sort(table(cand), decreasing = TRUE)[1]
-    model = names(genesets)[as.numeric(strsplit(names(raw), " ")[[1]])]
-    freq[[size]] = list(raw = as.numeric(raw), relative = relative(B, raw, nogs, size), model = model)
-  }
-
-  IF = freq[[peakw(sapply(freq, function(x) x$raw))]]
-  RIF = freq[[which.min(sapply(freq, function(x) x$relative))]]
-  
-  list(genesets = genesets, freq = freq, IF = IF, RIF = RIF)
-}
-
