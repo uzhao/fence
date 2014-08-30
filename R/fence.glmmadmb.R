@@ -15,13 +15,14 @@
 #' @export
 
 fence.glmmadmb = function(
-  full, data, family = c("g", "n"), B = 100, grid = 101, fence = c("adaptive", "nonadaptive"),
+  full, data, family = c("g", "n", "p"), zeroInflation = FALSE, B = 100, grid = 101, fence = c("adaptive", "nonadaptive"),
   cn = NA, bandwidth = NA) {
 
   family = match.arg(family)
   family = switch(family,
     g = "gamma",
-    n = "nbinom")
+    n = "nbinom", 
+    p = "poisson")
 
   fence = match.arg(fence)
   if (fence == "adaptive" & !is.na(cn) |
@@ -32,7 +33,7 @@ fence.glmmadmb = function(
   # find all candidate submodels
   ms = findsubmodel.glmmadmb(full)
   # model fit function
-  mf = function(...) glmmadmb(..., family = family)
+  mf = function(...) glmmadmb(..., family = family, zeroInflation = zeroInflation)
   # lack of fit function
   lf = function(res) -logLik(res)
   # pick up function
@@ -44,7 +45,7 @@ fence.glmmadmb = function(
   }
   if (fence == "adaptive")    {
     return(   adaptivefence(mf = mf, f = full, ms = ms, d = data, lf = lf, pf = pf,
-      bs = bootstrap.glmmadmb(B, full, data, family, of), grid = grid, bandwidth = bandwidth))
+      bs = bootstrap.glmmadmb(B, full, data, family, zeroInflation), grid = grid, bandwidth = bandwidth))
   }
 }
 
@@ -63,8 +64,8 @@ findsubmodel.glmmadmb = function(full) {
   lapply(res, as.formula)
 }
 
-bootstrap.glmmadmb = function (B, f, data, family, link) {
-  full = glmmadmb(formula = f, data = data, family = family)
+bootstrap.glmmadmb = function (B, f, data, family, zeroInflation) {
+  full = glmmadmb(formula = f, data = data, family = family, zeroInflation = zeroInflation)
   support = lmer(formula = f, data = data)
   ans = replicate(B, data, FALSE)
 
@@ -92,16 +93,22 @@ bootstrap.glmmadmb = function (B, f, data, family, link) {
     bootsmp = matrix(rnbinom(length(bootsmp), full$alpha, mu = bootsmp), nrow = nrow(bootsmp))
   }
 
+  if (family == "poisson") {
+    bootsmp = exp(as.matrix(as.vector(fe) + re))
+    bootsmp = matrix(rpois(length(bootsmp), lambda = bootsmp), nrow = nrow(bootsmp))
+  }
+
+  if (zeroInflation) {
+    bootsmp[rbinom(length(bootsmp), 1, full$pz)] = 0
+  }
+
   for (i in 1:B) {
     ans[[i]][,deparse(f[[2]])] = bootsmp[,i]
   }
   ans
 }
 
-# same to lmer
+# remove NA check to avoid warning
 size.glmmadmb = function(res) {
-  if (is.na(res)) {
-    return(Inf)
-  }
   length(fixef(res))
 }

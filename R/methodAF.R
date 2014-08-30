@@ -12,6 +12,7 @@
 #' @param grid grid for c
 #' @param bandwidth bandwidth for kernel smooth function
 #' @return list with whatever
+#' @export
 
 adaptivefence = function(
   # model and lack of fit related
@@ -34,7 +35,7 @@ adaptivefence = function(
 
   eval_models = lapply(ms, function(m) {
     lapply(bs, function(b) {
-      mf(m, b)
+      try(mf(m, b), silent = TRUE)
     })
   })
 
@@ -85,7 +86,7 @@ adaptivefence = function(
   if (is.na(bandwidth)) {
     bandwidth = (cs[2] - cs[1]) * 3
   }
-  ans$bandwidth = bandwidth
+  ans$bandwidth = bandwidth * 1
 
   model_mat = matrix(NA, nrow = B, ncol = grid)
   for (i in 1:length(cs)) {
@@ -131,6 +132,9 @@ adaptivefence = function(
   return(ans)
 }
 
+#' Plot Adaptive Fence model selection
+#'
+#' @export
 plot.AF = function(res) {
   tmp = data.frame(c = as.numeric(colnames(res$freq_mat)),
                    p = res$freq_mat[2, ],
@@ -144,6 +148,9 @@ plot.AF = function(res) {
   p
 }
 
+#' Summary Adaptive Fence model selection
+#'
+#' @export
 summary.AF = function(res) {
   print(res$sel_model)
 }

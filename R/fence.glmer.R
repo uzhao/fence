@@ -83,11 +83,11 @@ bootstrap.glmer = function (B, f, data, family) {
   re = Z %*% a
   bootsmp = family()$linkinv(as.matrix(as.vector(fe) + re))
 
-  if (family$family == "b") {
+  if (family()$family == "binomial") {
     bootsmp = matrix(rbinom(length(bootsmp), 1, bootsmp), nrow = nrow(bootsmp))
   }
 
-  if (family$family == "p") {
+  if (family()$family == "poisson") {
     bootsmp = matrix(rpois(length(bootsmp), bootsmp), nrow = nrow(bootsmp))
   }
 
