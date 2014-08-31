@@ -10,10 +10,11 @@
 #' @return list with whatever
 #' @export
 
-RF = function(full, data, groups, B = 100, grid = 101, bandwidth = NA, plot = FALSE) {
+RF = function(full, data, groups, B = 100, grid = 101, bandwidth = NA, plot = FALSE, method = c("marginal", "conditional"), id = "id") {
   if (is.na(bandwidth)) {
     stop("Must assign a bandwidth.")
   }
+  method = match.arg(method)
 
   # 1st step
   cands = character(0)
@@ -40,7 +41,7 @@ RF = function(full, data, groups, B = 100, grid = 101, bandwidth = NA, plot = FA
 
     groupaf = adaptivefence(mf = mf, f = group, ms = ms, d = data, lf = lf, pf = pf, bs = bs, grid = grid, bandwidth = bandwidth)
     if (plot) {
-      plot(groupaf)
+      print(plot(groupaf))
     }    
     groupc = groupaf$c
 
@@ -55,12 +56,21 @@ RF = function(full, data, groups, B = 100, grid = 101, bandwidth = NA, plot = FA
   cands = unique(cands)
 
   # 2nd step
-  resp = as.character(full)[2]
-  full2nd = as.formula(paste0(resp, "~", gsub(" ", "+", do.call(paste, as.list(cands)))))
-  bs = bootstrap.RF2(B, full2nd, data)
-  ms = findsubmodel.RF2(resp, cands)
-  res = adaptivefence(mf = lm, f = full2nd, ms = ms, d = data, lf = function(x) -logLik(x), 
-    pf = function(x) length(attributes(terms(x))$term.labels), bs = bs, bandwidth = NA)
+  if (method == "marginal") {
+    resp = as.character(full)[2]
+    full2nd = as.formula(paste0(resp, "~", gsub(" ", "+", do.call(paste, as.list(cands)))))
+    bs = bootstrap.RF2(B, full2nd, data)
+    ms = findsubmodel.RF2(resp, cands)
+    res = adaptivefence(mf = lm, f = full2nd, ms = ms, d = data, lf = function(x) -logLik(x), 
+      pf = function(x) length(attributes(terms(x))$term.labels), bs = bs, bandwidth = NA)
+  }
+
+  if (method == "conditional") {
+    resp = as.character(full)[2]
+    full2nd = as.formula(paste0(resp, "~", gsub(" ", "+", do.call(paste, as.list(cands))), "+(1|", id, ")"))
+    res = fence.lmer(full2nd, data, B = B, grid = grid)
+  }
+
   class(res) = "RF"
   res
 }
