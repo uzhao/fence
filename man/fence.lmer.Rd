@@ -19,7 +19,7 @@ fence.lmer(full, data, B = 100, grid = 101, fence = c("adaptive",
 
 \item{cn}{cn for nonadaptive}
 
-\item{method}{grid for c}
+\item{REML}{REML}
 
 \item{bandwidth}{bandwidth for kernel smooth function}
 }

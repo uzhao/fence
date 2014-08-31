@@ -8,7 +8,7 @@
 #' @param grid grid for c
 #' @param fence fence method to be used, (adaptive, nonadaptive, more to add)
 #' @param cn cn for nonadaptive
-#' @param method grid for c
+#' @param REML REML
 #' @param bandwidth bandwidth for kernel smooth function
 #' @return list with whatever
 #' @export

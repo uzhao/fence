@@ -10,4 +10,5 @@ License: BSD
 Depends:
     lme4,
     ggplot2,
-    compiler
+    compiler,
+    MASS

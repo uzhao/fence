@@ -46,7 +46,6 @@ adaptivefence = function(
   }
   B = sum(eb)
   ans$B = sum(eb)
-
   for (i in 1:length(ms)) {
     eval_models[[i]] = eval_models[[i]][eb]
   }
