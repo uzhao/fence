@@ -42,6 +42,7 @@ RF = function(full, data, groups, B = 100, grid = 101, bandwidth = NA, plot = FA
     groupaf = adaptivefence(mf = mf, f = group, ms = ms, d = data, lf = lf, pf = pf, bs = bs, grid = grid, bandwidth = bandwidth)
     if (plot) {
       print(plot(groupaf))
+      dev.off()
     }    
     groupc = groupaf$c
 
@@ -82,8 +83,14 @@ bootstrap.RF = function(B, full, group, data) {
   groupxtms = fulltms[!(fulltms %in%  grouptms)]
 
   y = data[,resp]
-  X1 = as.matrix(data[,grouptms])
-  X2 = as.matrix(data[,groupxtms])
+
+  grouptms = as.list(grouptms)
+  grouptms$sep = "+"
+  groupxtms = as.list(groupxtms)
+  groupxtms$sep = "+"
+
+  X1 = model.matrix(as.formula(paste0(resp, "~0+", do.call(paste, grouptms))), data)
+  X2 = model.matrix(as.formula(paste0(resp, "~0+", do.call(paste, groupxtms))), data)
 
   PX2O = diag(nrow(X2)) - X2 %*% ginv(t(X2) %*% X2) %*% t(X2)
   PX2OMX1 = PX2O - PX2O %*% X1 %*% ginv(t(X1) %*% PX2O %*% X1) %*% t(X1) %*% PX2O
@@ -103,8 +110,15 @@ findsubmodel.RF = function(full, group, data) {
   groupxtms = fulltms[!(fulltms %in%  grouptms)]
 
   y = data[,resp]
-  X1 = as.matrix(data[,grouptms])
-  X2 = as.matrix(data[,groupxtms])
+
+  grouptms = as.list(grouptms)
+  grouptms$sep = "+"
+  groupxtms = as.list(groupxtms)
+  groupxtms$sep = "+"
+
+  X1 = model.matrix(as.formula(paste0(resp, "~0+", do.call(paste, grouptms))), data)
+  X2 = model.matrix(as.formula(paste0(resp, "~0+", do.call(paste, groupxtms))), data)
+
   PX2O = diag(nrow(X2)) - X2 %*% ginv(t(X2) %*% X2) %*% t(X2)
 
   res = ""

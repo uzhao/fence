@@ -2,6 +2,7 @@
 
 S3method(plot,AF)
 export(IF.GSA)
+export(NF)
 export(RF)
 export(RIF.GSA)
 export(adaptivefence)
