@@ -16,7 +16,7 @@
 
 fence.glmmadmb = function(
   full, data, family = c("g", "n", "p"), zeroInflation = FALSE, B = 100, grid = 101, fence = c("adaptive", "nonadaptive"),
-  cn = NA, bandwidth = NA) {
+  cn = NA, bandwidth = NA, cpus = 2) {
 
   family = match.arg(family)
   family = switch(family,
@@ -44,6 +44,9 @@ fence.glmmadmb = function(
       cn = cn))
   }
   if (fence == "adaptive")    {
+    sfInit(parallel = TRUE, cpus = cpus) 
+    sfExportAll()
+    sfLibrary(glmmADMB)
     return(   adaptivefence(mf = mf, f = full, ms = ms, d = data, lf = lf, pf = pf,
       bs = bootstrap.glmmadmb(B, full, data, family, zeroInflation), grid = grid, bandwidth = bandwidth))
   }

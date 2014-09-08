@@ -16,7 +16,7 @@
 
 fence.glmer = function(
   full, data, family = c("b", "p"), B = 100, grid = 101, fence = c("adaptive", "nonadaptive"),
-  cn = NA, bandwidth = NA) {
+  cn = NA, bandwidth = NA, cpus = 2) {
 
   family = match.arg(family)
   family = switch(family,
@@ -43,6 +43,9 @@ fence.glmer = function(
       cn = cn))
   }
   if (fence == "adaptive")    {
+    sfInit(parallel = TRUE, cpus = cpus) 
+    sfExportAll()
+    sfLibrary(lme4)
     return(   adaptivefence(mf = mf, f = full, ms = ms, d = data, lf = lf, pf = pf,
       bs = bootstrap.glmer(B, full, data, family), grid = grid, bandwidth = bandwidth))
   }

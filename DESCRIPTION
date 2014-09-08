@@ -11,4 +11,7 @@ Depends:
     lme4,
     ggplot2,
     compiler,
-    MASS
+    MASS,
+    snowfall
+Suggests:
+    glmmADMB

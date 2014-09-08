@@ -33,11 +33,12 @@ adaptivefence = function(
     stop("No bootstrap sample specified!")
   }
 
-  eval_models = lapply(ms, function(m) {
+  eval_models = sfClusterApplyLB(ms, function(m) {
     lapply(bs, function(b) {
       try(mf(m, b), silent = TRUE)
     })
   })
+  sfStop()
 
   em = sapply(eval_models, function(eval_model) sapply(eval_model, class))
   eb = rowSums(em == "try-error") == 0

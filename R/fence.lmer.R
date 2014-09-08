@@ -15,7 +15,7 @@
 
 fence.lmer = function(
   full, data, B = 100, grid = 101, fence = c("adaptive", "nonadaptive"),
-  cn = NA, REML = TRUE, bandwidth = NA) {
+  cn = NA, REML = TRUE, bandwidth = NA, cpus = 2) {
 
   fence = match.arg(fence)
   if (fence == "adaptive" & !is.na(cn) |
@@ -37,6 +37,9 @@ fence.lmer = function(
       cn = cn))
   }
   if (fence == "adaptive")    {
+    sfInit(parallel = TRUE, cpus = cpus) 
+    sfExportAll()
+    sfLibrary(lme4)
     return(   adaptivefence(mf = mf, f = full, ms = ms, d = data, lf = lf, pf = pf,
       bs = bootstrap.lmer(B, full, data, REML), grid = grid, bandwidth = bandwidth))
   }
