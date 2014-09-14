@@ -5,7 +5,6 @@
 #' @param mf function for fitting the model
 #' @param f formular of full model
 #' @param d data
-#' @param d data
 #' @param lf a function provides lack of fit for all terms, e.g. function(x) abs(coef(x))[-1]
 #' @param bs bootstrap sample
 #' @return list with whatever
@@ -31,7 +30,7 @@ IFbase = function(
   bm = sapply(boot_evaluations, class) 
   bb = sum(bm != "try-error")
   if (bb != length(bs)) {
-    warning(paste0("Some bootstrap sample are not avaiable, new bootstrap size is ", sum(eb)))
+    warning(paste0("Some bootstrap sample are not avaiable, new bootstrap size is ", sum(bb)))
   }
   B = bb
   ans$B = bb

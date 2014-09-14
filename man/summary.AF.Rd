@@ -4,12 +4,8 @@
 \title{Summary Adaptive Fence model selection}
 \usage{
 summary.AF(res)
-
-summary.AF(res)
 }
 \description{
-Summary Adaptive Fence model selection
-
 Summary Adaptive Fence model selection
 }
 

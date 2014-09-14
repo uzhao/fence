@@ -134,8 +134,12 @@ findsubmodel.RF = function(full, group, data) {
   res = lapply(res, function(x) x[-1])[-length(res)]
   for (i in 1:length(res)) {
     X1 = as.matrix(data[,unlist(res[[i]][-length(res[[i]])])])
+    if (ncol(X1) == 0) {
+      next
+    }
     res[[i]] = list(model = res[[i]], meat = PX2O - PX2O %*% X1 %*% ginv(t(X1) %*% PX2O %*% X1) %*% t(X1) %*% PX2O)
   }
+  res = res[!(sapply(res, is.null))]
   res
 }
 

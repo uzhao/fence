@@ -4,12 +4,8 @@
 \title{Plot Adaptive Fence model selection}
 \usage{
 \method{plot}{AF}(res)
-
-\method{plot}{AF}(res)
 }
 \description{
-Plot Adaptive Fence model selection
-
 Plot Adaptive Fence model selection
 }
 
