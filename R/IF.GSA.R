@@ -95,13 +95,16 @@ IFbase.GSA = function(gene, response, genenames, genesets, minsize, B, limitboot
     cand = apply(matrix(Bsample_genesetorder[1:size,], nrow = size), 2, function(x) do.call(paste, as.list(sort(x))))
     raw = sort(table(cand), decreasing = TRUE)[1]
     model = names(genesets)[as.numeric(strsplit(names(raw), " ")[[1]])]
+    # FIXME, just bootstrap dim, not the bootstrap model
     freq[[size]] = list(raw = as.numeric(raw), relative = relative(B, raw, nogs, size), model = model)
   }
 
   IF = freq[[peakw(sapply(freq, function(x) x$raw))]]
   RIF = freq[[which.min(sapply(freq, function(x) x$relative))]]
 
-  list(genesets = genesets, freq = freq, IF = IF, RIF = RIF)
+  ans = list(genesets = genesets, freq = freq, IF = IF, RIF = RIF)
+  class(ans) = "IF.GSA"
+  ans
 }
 
 get_gene_scores = function(gene, response) {

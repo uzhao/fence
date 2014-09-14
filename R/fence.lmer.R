@@ -52,7 +52,7 @@ findsubmodel.lmer = function(full) {
   fixs = tms[!fr]
   rans = tms[fr]
   rans = paste("(", rans, ")", sep = "")
-  res = paste(resp, "~0+", rans, sep = "")
+  res = paste(resp, "~", rans, sep = "")
   for (fix in fixs) {
     res = as.vector(sapply(res, function(x) paste(x, c("", paste("+", fix, sep = "")), sep = "")))
   }

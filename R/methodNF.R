@@ -22,11 +22,9 @@ NF = function(full, data, spline, B = 100, grid = 101, bandwidth = NA) {
 
   ms = lapply(ps, function(p) {
     lapply(qs, function(q) {
-      generateNFmodels(p, q, full, spline)
+      generateNFmodels(p, q, full, spline, data)
     })
   })
-    generateNFmodels(ps, qs, full, spline)
-
 
   y = data[,resp]
 
@@ -34,31 +32,20 @@ NF = function(full, data, spline, B = 100, grid = 101, bandwidth = NA) {
   grouptms$sep = "+"
 
   X = model.matrix(as.formula(paste0(resp, "~0+", do.call(paste, grouptms))), data)
-
-
-
 }
 
-generateNFmodels = function(p, q, full, spline) {
+generateNFmodels = function(p, q, full, spline, data) {
   resp = as.character(full)[2]
-  fulltms = attributes(terms(full))$term.labels
-  extratms = fulltms[!(fulltms %in%  spline)]
-  extratms = as.list(extratms)
-  extratms$sep = "+"
+  pred = as.character(full)[3]
 
-  splinetms = sapply(spline, function(x) {
-    xs = paste0(x, "^", 1:p)
-    xs = as.list(xs)
-    xs$sep = "+"
-    do.call(paste, xs)
-  })
-  splinetms = as.list(splinetms)
-  splinetms$sep = "+"
-  ans = list()
-
-  ans$x = as.formula(paste0(resp, "~1+", do.call(paste, extratms), "+", do.call(paste, splinetms)))
-  ans$z = spline
-  ans$q = q
-  ans
+  for (sterm in spline) {
+    splineterm = addsplineterms(data[,sterm], p, q, sterm)
+    pred = paste0(pred, "+", splineterm$pred)
+    data = 
+  }
 }
 
+addsplineterms = function(spvalue, p, q, sterm) {
+  knots = seq(min(spvalue), max(spvalue), length.out = q)
+
+}

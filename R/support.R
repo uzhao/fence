@@ -12,3 +12,7 @@ peakw = function(cs, freq, req = 2) {
   warning("No peak identified!")
   return(NA)
 }
+
+peakglobal = function(freq) {
+  max(which(freq == max(freq)))
+}

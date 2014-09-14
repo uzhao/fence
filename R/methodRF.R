@@ -10,10 +10,12 @@
 #' @return list with whatever
 #' @export
 
-RF = function(full, data, groups, B = 100, grid = 101, bandwidth = NA, plot = FALSE, method = c("marginal", "conditional"), id = "id") {
+RF = function(full, data, groups, B = 100, grid = 101, bandwidth = NA, plot = FALSE, method = c("marginal", "conditional"), id = "id", cpus = 2) {
   if (is.na(bandwidth)) {
     stop("Must assign a bandwidth.")
   }
+
+
   method = match.arg(method)
 
   # 1st step
@@ -39,6 +41,8 @@ RF = function(full, data, groups, B = 100, grid = 101, bandwidth = NA, plot = FA
       x$size
     }
 
+    sfInit(parallel = TRUE, cpus = cpus) 
+    sfExportAll()
     groupaf = adaptivefence(mf = mf, f = group, ms = ms, d = data, lf = lf, pf = pf, bs = bs, grid = grid, bandwidth = bandwidth)
     if (plot) {
       print(plot(groupaf))
@@ -62,6 +66,8 @@ RF = function(full, data, groups, B = 100, grid = 101, bandwidth = NA, plot = FA
     full2nd = as.formula(paste0(resp, "~", gsub(" ", "+", do.call(paste, as.list(cands)))))
     bs = bootstrap.RF2(B, full2nd, data)
     ms = findsubmodel.RF2(resp, cands)
+    sfInit(parallel = TRUE, cpus = cpus) 
+    sfExportAll()
     res = adaptivefence(mf = lm, f = full2nd, ms = ms, d = data, lf = function(x) -logLik(x), 
       pf = function(x) length(attributes(terms(x))$term.labels), bs = bs, bandwidth = NA)
   }
@@ -127,7 +133,7 @@ findsubmodel.RF = function(full, group, data) {
   }
   res = lapply(res, function(x) x[-1])[-length(res)]
   for (i in 1:length(res)) {
-    X1 = as.matrix(data[,res[[i]]])
+    X1 = as.matrix(data[,unlist(res[[i]][-length(res[[i]])])])
     res[[i]] = list(model = res[[i]], meat = PX2O - PX2O %*% X1 %*% ginv(t(X1) %*% PX2O %*% X1) %*% t(X1) %*% PX2O)
   }
   res
