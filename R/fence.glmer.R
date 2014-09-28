@@ -12,6 +12,7 @@
 #' @param bandwidth bandwidth for kernel smooth function
 #' @return list with whatever
 #' @note more link to be added
+#' @author
 #' @export
 
 fence.glmer = function(
