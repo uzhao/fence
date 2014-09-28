@@ -17,7 +17,7 @@ IF.lm = function(
   full, data, B = 100, cpus = 2) {
   
   full = cleanformula(full) # remove random effect
-  
+  #my first comment
   # model fit function
   mf = lm
   # lack of fit function
