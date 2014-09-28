@@ -13,23 +13,31 @@
 #' @return list with whatever
 #' @export
 
-IF.lmer = function(
-  full, data, B = 100, REML = TRUE, method = c("marginal", "conditional"), cpus = 2) {
-  
-  method = match.arg(method)
-  if (method == "marginal") {
-    return(IF.lm(full, data, B, cpus))
-  }
+IF.nb = function(
+  full, data, B = 100, cpus = 2) {
   
   # model fit function
-  mf = function(...) lmer(..., REML = REML)
+  mf = glm.nb
   # lack of fit function
-  lf = function(res) abs(fixef(res))[-1]
+  lf = function(res) abs(coef(res))[-1]
   # bootstrap sample
-  bs = bootstrap.lmer(B, full, data, REML)
-
+  bs = bootstrap.nb(B, full, data)
+  
   sfInit(parallel = TRUE, cpus = cpus) 
   sfExportAll()
-  sfLibrary(glmmADMB)
   invisiblefence(mf, full, data, lf, bs)
+}
+
+bootstrap.nb = function(B, full, data) {
+  X = model.matrix(full, data)
+  model = glm.nb(full, data)
+  size = summary(model)$theta
+  beta = coef(model)
+  bootsmp = model.matrix(full, data) %*% beta
+  
+  ans = replicate(B, data, FALSE)
+  for (i in 1:B) {
+    ans[[i]][,deparse(full[[2]])] = rnbinom(length(bootsmp), size, mu = bootsmp)
+  }
+  ans  
 }

@@ -10,7 +10,7 @@
 #' @return list with whatever
 #' @export
 
-IFbase = function(
+invisiblefence = function(
   # model and lack of fit related
   mf, f, d, lf, 
   # bootstrap sample
@@ -23,11 +23,12 @@ IFbase = function(
     stop("No bootstrap sample specified!")
   }
   
-  boot_evaluations = lapply(bs, function(b) {
+  boot_evaluations = sfClusterApplyLB(bs, function(b) {
     try(mf(f, b), silent = TRUE)
   })
+  sfStop()
   
-  bm = sapply(boot_evaluations, class) 
+  bm = sapply(boot_evaluations, function(x) class(x)[1]) 
   bb = sum(bm != "try-error")
   if (bb != length(bs)) {
     warning(paste0("Some bootstrap sample are not avaiable, new bootstrap size is ", sum(bb)))
@@ -47,10 +48,13 @@ IFbase = function(
   
   size = peakglobal(freq[1:(nrow(orders_mat) - 1)])
   orlof = lf(mf(f, d))
-  model = names(sort(orlof, decreasing = TRUE)[1:size])
+  terms = names(sort(orlof, decreasing = TRUE))
+  model = terms[1:size]
+  ans$modeltest = names(sort(table(apply(orders_mat, 2, function(x) do.call(paste, as.list(sort(x[1:size]))))))[size])
 
   ans$freq = freq
   ans$size = size
+  ans$terms = terms
   ans$model = model
   class(ans) = "IF"
   return(ans)

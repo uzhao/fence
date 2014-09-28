@@ -3,9 +3,9 @@
 \alias{fence.glmmadmb}
 \title{Fence model selection (Generalized Linear Mixed Model by glmmadmb)}
 \usage{
-fence.glmmadmb(full, data, family = c("g", "n", "p"), zeroInflation = FALSE,
-  B = 100, grid = 101, fence = c("adaptive", "nonadaptive"), cn = NA,
-  bandwidth = NA, cpus = 2)
+fence.glmmadmb(full, data, family = c("g", "nb", "p"),
+  zeroInflation = FALSE, B = 100, grid = 101, fence = c("adaptive",
+  "nonadaptive"), cn = NA, bandwidth = NA, cpus = 2)
 }
 \arguments{
 \item{full}{formular of full model}

@@ -15,13 +15,13 @@
 #' @export
 
 fence.glmmadmb = function(
-  full, data, family = c("g", "n", "p"), zeroInflation = FALSE, B = 100, grid = 101, fence = c("adaptive", "nonadaptive"),
+  full, data, family = c("g", "nb", "p"), zeroInflation = FALSE, B = 100, grid = 101, fence = c("adaptive", "nonadaptive"),
   cn = NA, bandwidth = NA, cpus = 2) {
 
   family = match.arg(family)
   family = switch(family,
     g = "gamma",
-    n = "nbinom", 
+    nb = "nbinom", 
     p = "poisson")
 
   fence = match.arg(fence)

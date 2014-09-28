@@ -14,19 +14,45 @@
 #' @export
 
 IF.lm = function(
-  full, data, B = 100) {
+  full, data, B = 100, cpus = 2) {
   
   full = cleanformula(full) # remove random effect
   
   # model fit function
   mf = lm
   # lack of fit function
-  lf = function(res) abs(coef(res))[-1]
+  lf = function(res) abs(coef(res))[-1]  
   # bootstrap sample
   bs = bootstrap.lm(B, full, data)
   
-  IFbase(mf, full, data, lf, bs)
+  sfInit(parallel = TRUE, cpus = cpus) 
+  sfExportAll()
+  invisiblefence(mf, full, data, lf, bs)
 }
+
+RIF.lm = function(
+  full, data, B = 100, cpus = 2) {
+  ans = IF.lm(full, data, B, cpus)
+
+  B = ans$B
+  times = ans$freq * B
+  size = 1:length(ans$freq)
+  pvalues = sapply(size, function(i) pbirthday(B, choose(length(ans$freq), i), times[i]))
+
+  ans$freq = NULL
+  ans$pvalue = pvalues
+  ans$size = which.min(pvalues)
+  ans$model = ans$terms[1:ans$size]
+  class(ans) = "RIF"
+  ans
+}
+
+ad_hoc_relative = function(B, times, nogs, size) {
+  ans = hugepbirthday(B, chooseZ(nogs, size), times)
+  names(ans) = NULL
+  ans
+}
+
 
 bootstrap.lm = function(B, full, data) {
   X = model.matrix(full, data)

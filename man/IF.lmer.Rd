@@ -4,7 +4,7 @@
 \title{Invisible Fence model selection (Linear Mixed Model)}
 \usage{
 IF.lmer(full, data, B = 100, REML = TRUE, method = c("marginal",
-  "conditional"))
+  "conditional"), cpus = 2)
 }
 \arguments{
 \item{full}{formular of full model}

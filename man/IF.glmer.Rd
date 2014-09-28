@@ -3,7 +3,8 @@
 \alias{IF.glmer}
 \title{Invisible Fence model selection (Linear Mixed Model)}
 \usage{
-IF.glmer(full, data, family = c("b", "p"), B = 100)
+IF.glmer(full, data, family = c("b", "p"), B = 100, method = c("marginal",
+  "conditional"), cpus = 2)
 }
 \arguments{
 \item{full}{formular of full model}

@@ -14,7 +14,12 @@
 #' @export
 
 IF.glmer = function(
-  full, data, family = c("b", "p"), B = 100) {
+  full, data, family = c("b", "p"), B = 100, method = c("marginal", "conditional"), cpus = 2) {
+  
+  method = match.arg(method)
+  if (method == "marginal") {
+    return(IF.glm(full, data, family, B, cpus))
+  }
   
   family = match.arg(family)
   family = switch(family,
@@ -27,5 +32,8 @@ IF.glmer = function(
   # bootstrap sample
   bs = bootstrap.glmer(B, full, data, family)
   
-  IFbase(mf, full, data, lf, bs)
+  sfInit(parallel = TRUE, cpus = cpus) 
+  sfExportAll()
+  sfLibrary(lme4)
+  invisiblefence(mf, full, data, lf, bs)
 }
