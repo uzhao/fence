@@ -33,4 +33,7 @@ Fence model selection (Generalized Linear Mixed Model)
 \note{
 more link to be added
 }
+\author{
+Jianyang Zhao
+}
 

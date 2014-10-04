@@ -3,20 +3,21 @@
 \alias{RIF.GSA}
 \title{Relative Invisible Fence gene selection}
 \usage{
-RIF.GSA()
+RIF.GSA(gene, response, genenames, genesets, minsize = 0, B = 100,
+  limitboot = NA)
 }
 \arguments{
 \item{gene}{a matrix, each column for a subject}
 
 \item{response}{a factor vector, each element for a subject}
 
-\item{genename}{a character vector}
-
-\item{geneset}{a character list}
-
 \item{minsize}{a integer, only use geneset which size larger or equal to this}
 
 \item{B}{a integer, number of bootstrap samples}
+
+\item{genename}{a character vector}
+
+\item{geneset}{a character list}
 }
 \value{
 list with whatever

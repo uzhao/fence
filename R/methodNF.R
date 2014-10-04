@@ -5,28 +5,38 @@
 #' @param full formular of full model
 #' @param data data
 #' @param spline variable need spline terms
+#' @param ps order of power
+#' @param qs number of knots
 #' @param B number of bootstrap sample, parametric for lmer
 #' @param grid grid for c
 #' @param bandwidth bandwidth for kernel smooth function
 #' @return list with whatever
 #' @export
 
-NF = function(full, data, spline, ps = 1:4, qs = NA, B = 1000, grid = 101, bandwidth = NA) {
+NF = function(full, data, spline, ps = 1:4, qs = NA, B = 100, grid = 101, bandwidth = NA) {
   n = nrow(data)
   if (is.na(qs)) {
+    lower = ceiling(n/5)
+    upper = floor(n/4) 
     if (n < 50) {
-      qs = 2:floor(n/4)
-    } else {
-      qs = ceiling(n/5):floor(n/4)
-    }    
+      lower = 2
+    }
+    if (n > 500) {
+      lower = 100
+      upper = 125
+    }
+    qs = lower:upper
   }
 
   y = matrix(data[,as.character(full)[2]], ncol = 1)
   baseX = model.matrix(full, data)
-  fulladdtionX = genaddX(data[,spline], ps, max(qs))  
-  bs = genNFbs(B, y, baseX, fulladdtionX)
   
+  fulladdtionX = genaddX(data[,spline], ps, max(qs))
+  
+  bs = genNFbs(B, y, baseX, fulladdtionX)
+
   addtionX = genaddX(data[,spline], ps, qs)
+
   pind = 0
   lacks = replicate(length(ps), {
     pind <<- pind + 1
@@ -40,7 +50,7 @@ NF = function(full, data, spline, ps = 1:4, qs = NA, B = 1000, grid = 101, bandw
     qind = 0
     replicate(length(qs), {
       qind <<- qind + 1
-      X = cbind(curX, addtionX$qmatrix[[pind]][[qind]])
+      X = cbind(curX, addtionX$qmatrix[[pind]][[qind]][,,1])
       colSums((X %*% ginv(t(X) %*% X) %*% t(X) %*% bs - bs)^2)
     }, FALSE)
   }, FALSE)
@@ -49,17 +59,15 @@ NF = function(full, data, spline, ps = 1:4, qs = NA, B = 1000, grid = 101, bandw
   cs = seq(0, max(Qdiff), length.out = grid)
   ms = sapply(cs, function(cv) as.integer(names(sort(table(apply(Qdiff <= cv, 1, function(x) min(which(x)))), decreasing = TRUE)[1])))
   fs = sapply(cs, function(cv) max(colSums(Qdiff <= cv))) / B
-  
+  browser()
 }
 
 genaddX = function(svalue, ps, qs) {
-  mins = min(svalue)
-  maxs = max(svalue)
   psm = outer(svalue, ps, '^')
   qsm = lapply(ps, function(p) {
     res = lapply(qs, function(q) {
-      knots = seq(mins, maxs, length.out = q + 1)[-(q+1)]
-      outer(svalue, knots, function(x, y) ifelse(x < y, 0, x - y)) ^ p
+      knots = cover.design(as.matrix(svalue, ncol = 1) + rnorm(length(svalue), 0, 1e-10), q)
+      outer(svalue, knots$design, function(x, y) ifelse(x < y, 0, x - y)) ^ p
     })
     names(res) = paste0("q", qs)
     res

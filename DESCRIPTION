@@ -12,6 +12,8 @@ Depends:
     ggplot2,
     compiler,
     MASS,
+    sae,
+    fields,
     snowfall
 Suggests:
     glmmADMB,

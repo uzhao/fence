@@ -12,49 +12,15 @@
 #' @export
 
 # Two class unpaired type in GSA
-IF.GSA = function(
-  gene, response,
-  genenames, genesets, minsize = 0,
-  B = 100, limitboot = NA) {
-    ans = IFbase.GSA(gene, response, genenames, genesets, minsize, B, limitboot)
-    ans$RIF = NULL
-    ans
-}
-
-#' Relative Invisible Fence gene selection
-#'
-#' Relative Invisible Fence gene selection
-#'
-#' @param gene     a matrix, each column for a subject
-#' @param response a factor vector, each element for a subject
-#' @param genename a character vector
-#' @param geneset  a character list
-#' @param minsize  a integer, only use geneset which size larger or equal to this
-#' @param B        a integer, number of bootstrap samples
-#' @return list with whatever
-#' @export
-
-# Two class unpaired type in GSA
-RIF.GSA = function(
-  ){
-  "Hello"
-  # gene, response,
-  # genenames, genesets, minsize = 0,
-  # B = 100, limitboot = NA) {
-  #   ans = IFbase.GSA(gene, response, genenames, genesets, minsize, B, limitboot)
-  #   ans$IF = NULL
-  #   ans
-}
-
-IFbase.GSA = function(gene, response, genenames, genesets, minsize, B, limitboot) {
+IF.GSA = function(gene, response, genenames, genesets, minsize = 0, maxsize = Inf, B = 100, limitboot = NA) {
   response = factor(response)
   groupa = response == levels(response)[1]
   groupb = !groupa
   na = sum(groupa)
   nb = sum(groupb)
 
-  # remove too small genesets definition
-  genesets = genesets[sapply(genesets, length) >= minsize]
+  # remove too small or too large genesets definition
+  genesets = genesets[sapply(genesets, length) >= minsize && sapply(genesets, length) <= maxsize]
   # remove duplicated genesets definition
   dup = duplicated(sapply(genesets, function(geneset) {
     do.call(paste, as.list(sort(geneset)))
@@ -80,7 +46,7 @@ IFbase.GSA = function(gene, response, genenames, genesets, minsize, B, limitboot
   cat("Totally ", length(genesets)," gene sets remain.\n")
 
   rawscores = get_geneset_scores(gene, response, genesetsrow)
-  genesetsneedboot = rank(-rawscores$geneset_scores) <= limitboot
+  genesetsneedboot = rawscores$order[1:limitboot]
   rowsneedboot = na.omit(unique(unlist(genesetsrow[genesetsneedboot])))
 
   genesets = genesets[genesetsneedboot]
@@ -94,25 +60,49 @@ IFbase.GSA = function(gene, response, genenames, genesets, minsize, B, limitboot
     get_geneset_scores(Bsample, response, genesetsrow)$order
   })
 
-  if (is.na(limitboot)) {
-    limitboot = nogs
-  }
-
-  value = matrix(NA, 2, limitboot)
+  frequency = matrix(NA, 1, limitboot)
   for (size in 1:limitboot) {
     cand = apply(matrix(Bsample_genesetorder[1:size,], nrow = size), 2, function(x) do.call(paste, as.list(sort(x))))
     raw = sort(table(cand), decreasing = TRUE)[1]
-
-    value[1, size] = as.numeric(raw)
-    # freq[2, size] = relative(as.numeric(raw))
+    frequency[1, size] = as.numeric(raw)
   }
+  IF = peakglobal(frequency[1,1:(limitboot-1)])
 
-  IF = peakglobal(value[1,1:(limitboot-1)])
-  # RIF = freq[[which.min(sapply(freq, function(x) x$relative))]]
-
-  ans = list(genesets = genesets, value = value, IF = IF)
-  # ans = list(genesets = genesets, freq = freq, IF = IF, RIF = RIF)
+  ans = list()
+  ans$genesets = genesets
+  ans$frequency = frequency
+  ans$B = B
+  ans$minsize = minsize
+  ans$maxsize = maxsize
+  ans$IF = IF
+  ans$model = names(ans$genesets)[1:ans$IF]
   class(ans) = "IF.GSA"
+  ans
+}
+
+#' Relative Invisible Fence gene selection
+#'
+#' Relative Invisible Fence gene selection
+#'
+#' @param gene     a matrix, each column for a subject
+#' @param response a factor vector, each element for a subject
+#' @param genename a character vector
+#' @param geneset  a character list
+#' @param minsize  a integer, only use geneset which size larger or equal to this
+#' @param B        a integer, number of bootstrap samples
+#' @return list with whatever
+#' @export
+
+# Two class unpaired type in GSA
+RIF.GSA = function(gene, response, genenames, genesets, minsize = 0, maxsize = Inf, B = 100, limitboot = NA) {
+  ans = IF.GSA(gene, response, genenames, genesets, minsize, maxsize, B, limitboot)
+  ans$IF = NULL
+  pvalue = mapply(function(ck, coincident) pbirthdayex(ans$B, length(ans$genesets), ck, coincident), 1:(length(ans$genesets) - 1), ans$frequency[-length(ans$frequency)])
+  ans$frequency = NULL
+  ans$pvalue = pvalue
+  ans$RIF = which.min(pvalue)
+  ans$model = names(ans$genesets)[1:ans$RIF]
+  class(ans) = "RIF.GSA"
   ans
 }
 
@@ -153,24 +143,22 @@ get_geneset_scores = function(gene, response, genesetsrow) {
        order = order(-geneset_scores))
 }
 
-# hugepbirthday = function(n, classes, coincident) {
-#   k = coincident
-#   c = classes    # could be huge
-#   if (k < 2) 
-#     return(1)
-#   if (k == 2)  {
-#     ans = as.bigq(1)
-#     for (i in 1:(k - 1)) {
-#       ans = ans * (c - i) / c 
-#     }
-#     return(ans)
-#   }
-#   if (k > n) 
-#     return(0)
-# }
-
-# relative = function(B, times, nogs, size) {
-#   ans = hugepbirthday(B, chooseZ(nogs, size), times)
-#   names(ans) = NULL
-#   ans
-# }
+pbirthdayex = function(n, cn, ck, coincident) {
+  res = pbirthday(n, as.numeric(chooseZ(cn, ck)), coincident)
+  if (res != 0) {
+    return(res)
+  }
+  if (coincident == 2) {
+    res = as.bigq(1)
+    ca = as.bigq(chooseZ(cn, ck))
+    for (i in 1:(n-1)) {
+      res = res * as.bigq(ca - as.bigq(i)) / ca
+    }
+    res = 1 - as.numeric(res)
+  }
+  if (res != 0) {
+    return(res)
+  }
+  warning("...")
+  return(res)
+}

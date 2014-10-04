@@ -3,7 +3,7 @@
 \alias{NF}
 \title{Nonparametric Fence}
 \usage{
-NF(full, data, spline, ps = 1:4, qs = NA, B = 1000, grid = 101,
+NF(full, data, spline, ps = 1:4, qs = NA, B = 100, grid = 101,
   bandwidth = NA)
 }
 \arguments{
@@ -12,6 +12,10 @@ NF(full, data, spline, ps = 1:4, qs = NA, B = 1000, grid = 101,
 \item{data}{data}
 
 \item{spline}{variable need spline terms}
+
+\item{ps}{order of power}
+
+\item{qs}{number of knots}
 
 \item{B}{number of bootstrap sample, parametric for lmer}
 
