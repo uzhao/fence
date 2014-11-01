@@ -3,8 +3,8 @@
 \alias{RIF.GSA}
 \title{Relative Invisible Fence gene selection}
 \usage{
-RIF.GSA(gene, response, genenames, genesets, minsize = 0, B = 100,
-  limitboot = NA)
+RIF.GSA(gene, response, genenames, genesets, minsize = 0, maxsize = Inf,
+  B = 100, limitboot = NA)
 }
 \arguments{
 \item{gene}{a matrix, each column for a subject}

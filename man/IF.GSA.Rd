@@ -3,8 +3,8 @@
 \alias{IF.GSA}
 \title{Invisible Fence gene selection}
 \usage{
-IF.GSA(gene, response, genenames, genesets, minsize = 0, B = 100,
-  limitboot = NA)
+IF.GSA(gene, response, genenames, genesets, minsize = 0, maxsize = Inf,
+  B = 100, limitboot = NA)
 }
 \arguments{
 \item{gene}{a matrix, each column for a subject}
